@@ -9,6 +9,9 @@
 // - correctness, efficiency, and clarity of the code;
 // - the test cases.
 
+import java.util.*;
+import java.util.function.IntPredicate;
+
 /**
  * A {@code Hierarchy} stores an arbitrary <i>forest</i> (an ordered collection of ordered trees)
  * as an array of node IDs in the order of DFS traversal, combined with a parallel array of node depths.
@@ -81,9 +84,50 @@ interface Hierarchy {
  * A node is present in the filtered hierarchy iff its node ID passes the predicate and all of its ancestors pass it as well.
  */
 class HierarchyFilter {
-    public static Hierarchy filter(Hierarchy hierarchy, java.util.function.IntPredicate nodeIdPredicate) {
-        // todo implement
-        return new ArrayBasedHierarchy(new int[0], new int[0]);
+    public static Hierarchy filter(Hierarchy hierarchy, IntPredicate nodeIdPredicate) {
+        // Validate required inputs
+        Objects.requireNonNull(hierarchy, "hierarchy must not be null");
+        Objects.requireNonNull(nodeIdPredicate, "predicate must not be null");
+
+        int size = hierarchy.size();
+        // O(n) space complexity, where n is the number of nodes
+        int[] filteredNodeIds = new int[size];
+        int[] filteredDepths = new int[size];
+        int acceptedCount = 0;
+        int index = 0;
+
+        // O(n) time complexity: each node is processed at most once
+        while (index < size) {
+            int nodeId = hierarchy.nodeId(index);
+
+            // Skip the node and all its descendants if it is rejected
+            if (!nodeIdPredicate.test(nodeId)) {
+                index = skipSubtree(hierarchy, index, size);
+                continue;
+            }
+
+            filteredNodeIds[acceptedCount] = nodeId;
+            filteredDepths[acceptedCount] = hierarchy.depth(index);
+            acceptedCount++;
+            index++;
+        }
+
+        return new ArrayBasedHierarchy(
+                Arrays.copyOf(filteredNodeIds, acceptedCount),
+                Arrays.copyOf(filteredDepths, acceptedCount)
+        );
+    }
+
+    /** Skip all descendants of the rejected node. */
+    private static int skipSubtree(Hierarchy hierarchy, int index, int size) {
+        int rejectedDepth = hierarchy.depth(index);
+        int nextIndex = index + 1;
+
+        // In DFS order, all descendants follow their parent at greater depths.
+        while (nextIndex < size && hierarchy.depth(nextIndex) > rejectedDepth) {
+            nextIndex++;
+        }
+        return nextIndex;
     }
 }
 
