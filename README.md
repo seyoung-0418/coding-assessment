@@ -44,5 +44,3 @@ Requires Java 21 and Maven. Run from the repository root:
 ```sh
 mvn clean test
 ```
-
-GitHub Actions also runs the tests with Java 21.
